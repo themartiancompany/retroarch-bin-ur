@@ -1,0 +1,70 @@
+# Find the surreal dynamical directory
+# put in place by that horrible piece
+# of software which is 'pm'.
+_pm_dir_find() {
+  local \
+    _sum="${1}" \
+    _candidates=() \
+    _file \
+    _candidate_sum
+  _candidates=( $( \
+    sudo \
+      find \
+        "/data/app" \
+        -type \
+          "f" \
+        -iwholename \
+          "/data/app/*/*/base.apk")
+  )
+  for _file in \
+    "${_candidates[@]}"; do
+    _candidate_sum="$( \
+      sha256sum \
+        "${_file}")"
+    if [[ "${_candidate_sum}" == "${_sum}" ]]; then
+      echo \
+        "$(dirname \
+	     "${_file}")"
+      break
+    fi
+  done
+}
+
+post_install() {
+  local \
+    _msg=() \
+    _sum  \
+    _static_apk_dir
+    _apk_dir
+  _static_apk_dir="/data/app/com.retroarch"
+  _msg=(
+    "linking installed application"
+    "in place of the one put in place"
+    "by Android's absurd 'pm' utility."
+  )
+  msg \
+    "${_msg[*]}"
+  _sum="$( \
+    sha256sum \
+      "${_static_apk_dir}/base.apk")"
+  _apk_dir="$( \
+    _pm_dir_find \
+      "${_sum}")"
+  _msg=(
+    "Removing '${_apk_dir}'."
+  )
+  msg \
+    "${_msg[*]}"
+  rm \
+    -rf \
+    "${_apk_dir}"
+  _msg=(
+    "Linking '${_apk_dir}'."
+  )
+  msg \
+    "${_msg[*]}"
+  ln \
+    -s \
+    "${_static_apk_dir}" \
+    "${_apk_dir}"
+}
