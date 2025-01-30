@@ -24,6 +24,13 @@
 
 _offline="false"
 _git="false"
+_system_install="false"
+_user_install="true"
+if [[ "${_system_install}" == "true" ]]; then
+  _install_type="system"
+elif [[ "${_user_install}" == "true" ]]; then
+  _install_type="user"
+fi
 _pkgname="retroarch"
 _pkg="com.${_pkgname}"
 _Pkg="${_pkgname}"
@@ -117,20 +124,41 @@ validgpgkeys=(
 package() {
   local \
     _dest_dir \
-    _dest
+    _dest \
+    _arch \
+    _aarch
   _dest_dir="/usr/bin"
   _dest="${_pkgname}.apk"
   if [[ "${_os}" == "Android" ]]; then
-    _dest_dir="/system/app/${_Pkg}"
+    if [[ "${_install_type}" == "system" ]]; then
+      _dest_dir="/system/app/${_Pkg}"
+    elif [[ "${_install_type}" == "user" ]]; then
+      _dest_dir="/data/app/${_pkg}"
+    fi
     _dest="base.apk"
+  fi
+  _arch="$( \
+    uname \
+      -m)"
+  _aarch="${_arch}"
+  if [[ "${_arch}" == "armv7l" ]]; then
+    _aarch="armeabi-v7a"
+  elif [[ "${_arch}" == "aarch64" ]]; then
+    _aarch="arm64-v8a"
+  elif [[ "${_arch}" == "i686" ]]; then
+    _aarch="x86"
   fi
   install \
     -dm755 \
-    "${pkgdir}${_dest_dir}"
+    "${pkgdir}${_dest_dir}/lib"
   install \
     -Dm644 \
     "${srcdir}/${_tarname}.apk" \
     "${pkgdir}/${_dest_dir}/${_dest}"
+  install \
+    -Dm644 \
+    "${srcdir}/lib/${_aarch}/libretroarch-activity.so" \
+    "${pkgdir}${_dest_dir}/lib"
 }
 
 # vim: ft=sh syn=sh et
