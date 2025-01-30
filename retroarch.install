@@ -1,12 +1,26 @@
 # Find the surreal dynamical directory
 # put in place by that horrible piece
 # of software which is 'pm'.
-_pm_dir_find() {
+_apk_dir_find() {
   local \
-    _sum="${1}" \
+    _app="${1}" \
+    _sum \
     _candidates=() \
+    _msg=() \
     _file \
-    _candidate_sum
+    _candidate_sum \
+    _static_apk_dir
+  _msg=(
+    "Getting application"
+    "installation directory"
+    "using 'find'."
+  )
+  echo \
+    "${_msg[*]}"
+  _static_apk_dir="/data/app/${_app}"
+  _sum="$( \
+    sha256sum \
+      "${_static_apk_dir}/base.apk")"
   _candidates=( $( \
     sudo \
       find \
@@ -22,49 +36,130 @@ _pm_dir_find() {
       sha256sum \
         "${_file}")"
     if [[ "${_candidate_sum}" == "${_sum}" ]]; then
-      echo \
-        "$(dirname \
-	     "${_file}")"
+      _apk_dir="$( \
+        dirname \
+	  "${_file}")"
       break
     fi
   done
 }
 
-post_install() {
+# Get the surreal dynamical directory
+# put in place by that horrible
+# piece of software which is 'pm'.
+_apk_dir_pm() {
   local \
+    _app="${1}" \
+    _cmd=() \
     _msg=() \
-    _sum  \
-    _static_apk_dir
-    _apk_dir
-  _static_apk_dir="/data/app/com.retroarch"
+    _out
   _msg=(
-    "linking installed application"
+    "Getting application"
+    "installation directory"
+    "using 'pm'."
+  )
+  echo \
+    "${_msg[*]}"
+  _cmd=(
+    sudo
+      cmd
+        pm
+	  path
+	    "${_app}"
+  )
+  _out="$( \
+    "${_cmd[@]}")"
+  _apk_dir="${_out#package:}"
+}
+
+_apk_dir_get() {
+  local \
+    _app="${1}" \
+    _method="${2}" \
+    _path
+  if [[ "${_method}" == "" ]]; then
+    _method="pm"  
+  fi
+  "_apk_dir_${_method}"
+}
+
+_dynamic_install_path_fix() {
+  local \
+    _app="${1}" \
+    _msg=() \
+    _static_apk_dir \
+    _apk_dir \
+  _static_apk_dir="/data/app/${_app}"
+  _msg=(
+    "Linking installed application"
     "in place of the one put in place"
     "by Android's absurd 'pm' utility."
   )
-  msg \
+  echo \
     "${_msg[*]}"
-  _sum="$( \
-    sha256sum \
-      "${_static_apk_dir}/base.apk")"
-  _apk_dir="$( \
-    _pm_dir_find \
-      "${_sum}")"
+  _apk_dir_get \
+    "${_app}" \
+    "pm"
   _msg=(
     "Removing '${_apk_dir}'."
   )
-  msg \
+  echo \
     "${_msg[*]}"
-  rm \
-    -rf \
-    "${_apk_dir}"
+  sudo \
+    rm \
+      -rf \
+      "${_apk_dir}"
   _msg=(
-    "Linking '${_apk_dir}'."
+    "Linking '${_apk_dir}' to"
+    "'${_static_apk_dir}'."
   )
-  msg \
+  echo \
     "${_msg[*]}"
-  ln \
-    -s \
-    "${_static_apk_dir}" \
-    "${_apk_dir}"
+  sudo \
+    ln \
+      -s \
+      "${_static_apk_dir}" \
+      "${_apk_dir}"
+}
+
+post_install() {
+  local \
+    _app \
+    _android_version \
+    _msg=()
+  _app="com.retroarch"
+  _android_version="$( \
+    sudo \
+      cat \
+        "/system/build.prop" | \
+      grep \
+        "ro.build.version.sdk=" | \
+        awk \
+	  -F \
+	    "=" \
+	    '{print $2}')"
+  if (( "${_android_version}" > 24 )); then
+    _msg=(
+      "Detected Android version enforcing"
+      "surreal, dynamically generated,"
+      "unstable applications' installation"
+      "paths, a choice probably led by the fact"
+      "Google can't say explicitly users should"
+      "actually never trust or install closed source,"
+      "proprietary, dangerous applications like most"
+      "of those on their store and so many of their own"
+      "as well."
+    )
+    echo \
+      "${_msg[*]}"
+    _dynamic_install_path_fix  \
+      "${_app}"
+  else
+    _msg=(
+      "Detected an unsecure Android version."
+      "Yes, there's no salvation."
+    )
+    echo \
+      "${_msg[*]}"
+  fi
 }
