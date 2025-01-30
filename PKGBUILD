@@ -80,7 +80,6 @@ provides=(
 conflicts=(
   "${_pkgname}"
 )
-install="${_pkgname}.install"
 source=()
 sha256sums=()
 _url="https://f-droid.org/repo"
