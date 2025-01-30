@@ -11,7 +11,7 @@ _apk_dir_find() {
     _candidate_sum \
     _static_apk_dir
   _msg=(
-    "Getting application"
+    "Getting '${_app}' application"
     "installation directory"
     "using 'find'."
   )
@@ -20,7 +20,18 @@ _apk_dir_find() {
   _static_apk_dir="/data/app/${_app}"
   _sum="$( \
     sha256sum \
-      "${_static_apk_dir}/base.apk")"
+      "${_static_apk_dir}/base.apk" | \
+      awk \
+        '{print $1}')"
+  echo \
+    "results:"
+  sudo \
+    find \
+      "/data/app" \
+      -type \
+        "f" \
+      -iwholename \
+        "/data/app/*/*/base.apk"
   _candidates=( $( \
     sudo \
       find \
@@ -34,7 +45,9 @@ _apk_dir_find() {
     "${_candidates[@]}"; do
     _candidate_sum="$( \
       sha256sum \
-        "${_file}")"
+        "${_file}" | \
+	awk \
+	  '{print $1}')"
     if [[ "${_candidate_sum}" == "${_sum}" ]]; then
       _apk_dir="$( \
         dirname \
@@ -54,28 +67,28 @@ _apk_dir_pm() {
     _msg=() \
     _out
   _msg=(
-    "Getting application"
+    "Getting '${_app}' application"
     "installation directory"
     "using 'pm'."
   )
   echo \
     "${_msg[*]}"
   _cmd=(
-    sudo
-      pm
-        path
-          "${_app}"
+    "/system/bin/pm"
+      path
+        "${_app}"
   )
   _out="$( \
-    "${_cmd[@]}")"
+    su \
+      -c \
+        "${_cmd[*]}")"
   _apk_dir="${_out#package:}"
 }
 
 _apk_dir_get() {
   local \
     _app="${1}" \
-    _method="${2}" \
-    _path
+    _method="${2}"
   if [[ "${_method}" == "" ]]; then
     _method="pm"  
   fi
@@ -88,7 +101,7 @@ _dynamic_install_path_fix() {
     _app="${1}" \
     _msg=() \
     _static_apk_dir \
-    _apk_dir \
+    _apk_dir
   _static_apk_dir="/data/app/${_app}"
   _msg=(
     "Linking installed application"
@@ -99,7 +112,7 @@ _dynamic_install_path_fix() {
     "${_msg[*]}"
   _apk_dir_get \
     "${_app}" \
-    "pm"
+    "find"
   _msg=(
     "Removing '${_apk_dir}'."
   )
