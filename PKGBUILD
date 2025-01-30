@@ -36,7 +36,6 @@ _pkg="com.${_pkgname}"
 _Pkg="${_pkgname}"
 pkgname="${_pkgname}-bin"
 pkgver=1.20.0
-# _commit="e117ccae32d5a7d75479b61f034000122fe9fa24"
 pkgrel=1597175263
 _pkgdesc=(
   "Cross-platform videogame emulator"
