@@ -62,10 +62,9 @@ _apk_dir_pm() {
     "${_msg[*]}"
   _cmd=(
     sudo
-      cmd
-        pm
-	  path
-	    "${_app}"
+      pm
+        path
+          "${_app}"
   )
   _out="$( \
     "${_cmd[@]}")"
@@ -80,7 +79,8 @@ _apk_dir_get() {
   if [[ "${_method}" == "" ]]; then
     _method="pm"  
   fi
-  "_apk_dir_${_method}"
+  "_apk_dir_${_method}" \
+    "${_app}"
 }
 
 _dynamic_install_path_fix() {
